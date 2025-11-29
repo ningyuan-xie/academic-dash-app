@@ -154,10 +154,9 @@ Database **Neo4j** is used to store and retrieve this data.
 ### 5.6 Widget 6: Top 10 Universities Collaborated with Selected Universities
 This widget visualizes institutional research collaborations. Specifically, users can select a university to view its **top 10 collaborating institutions** including the number of coauthors, helping users understand academic partnerships and research networks.
 
-Users can also click on the generated sunburst chart to view basic information about the selected university, including its name, total faculty count, and logo if available. For universities with strong CS programs, the $\frac{\text{number of coauthors}}{\text{total faculty count}}$ ratio among their collaborating institutions is usually higher.
+Users can also click on the generated sunburst chart to view basic information about the selected university, including its name, total faculty count, and logo if available. For universities with strong CS programs, the coauthor ratio (number of coauthors / total faculty count) among their collaborating institutions is usually higher.
 
 Database **Neo4j** and **MySQL** are used to store and retrieve this data.
-
 
 ---
 
