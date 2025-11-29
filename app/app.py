@@ -10,7 +10,10 @@ from memory_utils import start_memory_cleanup
 
 def create_app() -> Dash:
     """Create and initialize the Dash app."""
-    app = Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
+    app = Dash(
+        __name__, 
+        external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP]
+    )
     app.title = "Exploring Academic World"
     app.layout = create_layout()
     return app
