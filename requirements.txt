@@ -8,3 +8,4 @@ pymongo==4.10.1
 python-dotenv==1.1.0
 requests==2.32.3
 dnspython==2.7.0
+dash-bootstrap-components==1.7.1
