@@ -175,3 +175,80 @@ def find_top_faculties_with_highest_KRC_keyword(keyword: str, affiliation: str) 
         return []
     finally:
         close_mongo_connection(client)
+
+
+# For 6. Widget Six: MongoDB Sunburst Chart - University Collaboration
+def university_collaborate_with_mongo(university_name: str) -> List[Tuple[str, int]]:
+    """Fetch institutes collaborating with a specific university from the MongoDB database."""
+    client = None
+    try:
+        client, db = get_mongo_connection()
+        
+        # Create indexes for optimized query performance
+        db.faculty.create_index([("affiliation.name", 1)])  # Optimizes filtering by university
+        db.faculty.create_index([("publications", 1)])  # Optimizes lookup by publications array
+        
+        # First, get all publication IDs from faculty at the selected university (as a set)
+        faculty_from_uni = list(db.faculty.find(
+            { "affiliation.name": university_name },
+            { "publications": 1, "name": 1 }
+        ))
+        
+        # Collect all unique publication IDs
+        publication_ids = set()
+        faculty_pub_map = {}  # Map publication_id -> set of faculty names
+        for faculty in faculty_from_uni:
+            faculty_name = faculty.get("name", "")
+            for pub_id in faculty.get("publications", []):
+                publication_ids.add(pub_id)
+                if pub_id not in faculty_pub_map:
+                    faculty_pub_map[pub_id] = set()
+                faculty_pub_map[pub_id].add(faculty_name)
+        
+        if not publication_ids:
+            return []
+        
+        # Now find all faculty who have any of these publications (excluding same university)
+        # Use a more efficient query with $in operator
+        collaborating_faculty = db.faculty.find(
+            {
+                "publications": { "$in": list(publication_ids) },
+                "affiliation.name": { "$ne": university_name }
+            },
+            { "name": 1, "affiliation.name": 1, "publications": 1 }
+        )
+        
+        # Build collaboration map: university -> set of original faculty who collaborated
+        collaboration_map = {}  # university_name -> set of original faculty names
+        for faculty in collaborating_faculty:
+            collab_university = faculty.get("affiliation", {}).get("name", "")
+            if not collab_university:
+                continue
+            
+            collab_publications = set(faculty.get("publications", []))
+            # Find which publications this faculty shares with original university
+            shared_pubs = collab_publications.intersection(publication_ids)
+            
+            # For each shared publication, add all original faculty to the collaboration
+            for pub_id in shared_pubs:
+                if collab_university not in collaboration_map:
+                    collaboration_map[collab_university] = set()
+                collaboration_map[collab_university].update(faculty_pub_map.get(pub_id, set()))
+        
+        # Convert to list of tuples and sort
+        result = [
+            (university, len(faculty_set))
+            for university, faculty_set in collaboration_map.items()
+        ]
+        result.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return top 10
+        return result[:10]
+    
+    except Exception as e:
+        print(f"Error fetching collaboration data for '{university_name}':", e)
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        close_mongo_connection(client)

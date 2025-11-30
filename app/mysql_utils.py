@@ -381,6 +381,243 @@ def find_top_faculties_with_highest_KRC_keyword_sql(keyword: str, university: st
         close_db_connection(cursor, cnx)
 
 
+# For 5.1 Widget Five: MySQL Table (Keeping Neo4j for now, MySQL alternative available)
+def faculty_interested_in_keywords_mysql(university_name: str) -> List[Tuple[str, str, int]]:
+    """Fetch top keywords that faculty at a selected university are interested in from the MySQL database."""
+    cnx, cursor = None, None
+    try:
+        cnx = get_db_connection()
+        cursor = cnx.cursor()
+        
+        # Query to get top 10 keywords by faculty count for a given university
+        # Join: university -> faculty -> faculty_keyword -> keyword
+        query = """SELECT keyword.id, keyword.name, COUNT(DISTINCT faculty.id) AS faculty_count
+                   FROM university
+                   INNER JOIN faculty ON university.id = faculty.university_id
+                   INNER JOIN faculty_keyword ON faculty.id = faculty_keyword.faculty_id
+                   INNER JOIN keyword ON faculty_keyword.keyword_id = keyword.id
+                   WHERE university.name = %s
+                   AND faculty.is_deleted = FALSE
+                   AND (keyword.is_deleted IS NULL OR keyword.is_deleted = FALSE)
+                   GROUP BY keyword.id, keyword.name
+                   ORDER BY faculty_count DESC
+                   LIMIT 10"""
+        cursor.execute(query, (university_name,))
+        results = cursor.fetchall()
+        return [(str(row[0]), str(row[1]), _safe_int(row[2])) for row in results]  # [(id, keyword, count), ...]
+    except Exception as e:
+        print(f"Error fetching faculty keyword data for '{university_name}':", e)
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        close_db_connection(cursor, cnx)
+
+
+# For 5.2 Widget Five: MySQL Table - Count Keywords (Keeping Neo4j for now, MySQL alternative available)
+def get_keyword_count_mysql() -> int:
+    """Get the total number of keywords in the MySQL database (excluding deleted ones)."""
+    cnx, cursor = None, None
+    try:
+        cnx = get_db_connection()
+        cursor = cnx.cursor()
+        
+        # Check if 'is_deleted' column exists in keyword table
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'keyword' 
+            AND COLUMN_NAME = 'is_deleted'
+        """)
+        result = cursor.fetchone()
+        column_exists = (_safe_int(result[0]) > 0) if result else False
+        
+        if not column_exists:
+            try:
+                cursor.execute("ALTER TABLE keyword ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE")
+                cnx.commit()
+            except Exception as alter_error:
+                print(f"Error adding is_deleted column to keyword table: {alter_error}")
+                # Continue even if column creation fails
+        
+        # Count active (non-deleted) keywords
+        cursor.execute("SELECT COUNT(*) FROM keyword WHERE is_deleted IS NULL OR is_deleted = FALSE")
+        result = cursor.fetchone()
+        return _safe_int(result[0]) if result else 0
+    except Exception as e:
+        print(f"Error fetching keyword count: {e}")
+        return 0
+    finally:
+        close_db_connection(cursor, cnx)
+
+
+# For 5.3 Widget Five: MySQL Table - Delete Keywords (Keeping Neo4j for now, MySQL alternative available)
+def delete_keyword_mysql(keyword_id: str) -> bool:
+    """Soft delete a keyword from the MySQL database using a Transaction."""
+    cnx, cursor = None, None
+    try:
+        cnx = get_db_connection()
+        cursor = cnx.cursor()
+        
+        # First, ensure is_deleted column exists (do this separately to avoid transaction issues)
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'keyword' 
+            AND COLUMN_NAME = 'is_deleted'
+        """)
+        result = cursor.fetchone()
+        column_exists = (_safe_int(result[0]) > 0) if result else False
+        
+        if not column_exists:
+            try:
+                cursor.execute("ALTER TABLE keyword ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE")
+                cnx.commit()
+            except Exception as alter_error:
+                print(f"Error adding is_deleted column to keyword table: {alter_error}")
+                # Continue even if column creation fails
+                # If there was an error, ensure we're in a clean state
+                try:
+                    cnx.rollback()
+                except:
+                    pass
+        
+        # Validate keyword_id
+        if not keyword_id or keyword_id.strip() == "":
+            print(f"Invalid keyword_id: empty or None")
+            return False
+        
+        # Now handle the delete operation
+        # Try converting to int first (most MySQL IDs are integers)
+        keyword_id_int = None
+        try:
+            keyword_id_int = int(keyword_id)
+        except (ValueError, TypeError):
+            pass  # Keep as string if conversion fails
+        
+        # Ensure we're not in a transaction before starting a new one
+        try:
+            # Try to start transaction, but if one is already in progress, rollback first
+            cnx.start_transaction()
+        except Exception as tx_error:
+            # If transaction already in progress, rollback and try again
+            if "already in progress" in str(tx_error).lower():
+                cnx.rollback()
+                cnx.start_transaction()
+            else:
+                raise
+        
+        # Soft delete the keyword - try int first, then string
+        rows_affected = 0
+        if keyword_id_int is not None:
+            cursor.execute("UPDATE keyword SET is_deleted = TRUE WHERE id = %s", (keyword_id_int,))
+            rows_affected = cursor.rowcount
+            if rows_affected == 0:
+                # If int didn't work, try as string
+                cnx.rollback()
+                # Start a new transaction for the string attempt
+                try:
+                    cnx.start_transaction()
+                except Exception as tx_error:
+                    if "already in progress" in str(tx_error).lower():
+                        cnx.rollback()
+                        cnx.start_transaction()
+                    else:
+                        raise
+                cursor.execute("UPDATE keyword SET is_deleted = TRUE WHERE id = %s", (keyword_id,))
+                rows_affected = cursor.rowcount
+        else:
+            cursor.execute("UPDATE keyword SET is_deleted = TRUE WHERE id = %s", (keyword_id,))
+            rows_affected = cursor.rowcount
+        
+        if rows_affected > 0:
+            cnx.commit()
+            print(f"Successfully deleted keyword with id: {keyword_id}")
+            return True
+        else:
+            cnx.rollback()
+            print(f"No keyword found with id: {keyword_id} (tried as {'int and string' if keyword_id_int is not None else 'string'})")
+            return False
+        
+    except Exception as e:
+        print(f"Error deleting keyword '{keyword_id}':", e)
+        import traceback
+        traceback.print_exc()
+        if cnx:
+            cnx.rollback()
+        return False
+    finally:
+        close_db_connection(cursor, cnx)
+
+
+# For 5.4 Widget Five: MySQL Table - Restore Keywords (Keeping Neo4j for now, MySQL alternative available)
+def restore_keyword_mysql() -> bool:
+    """Restore all deleted keywords in the MySQL database using a Transaction."""
+    cnx, cursor = None, None
+    try:
+        cnx = get_db_connection()
+        cursor = cnx.cursor()
+        
+        # Check if 'is_deleted' column exists
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'keyword' 
+            AND COLUMN_NAME = 'is_deleted'
+        """)
+        result = cursor.fetchone()
+        column_exists = (_safe_int(result[0]) > 0) if result else False
+        
+        if not column_exists:
+            # If column doesn't exist, ensure it exists first
+            try:
+                cursor.execute("ALTER TABLE keyword ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE")
+                cnx.commit()
+                print("Added is_deleted column to keyword table")
+            except Exception as alter_error:
+                print(f"Error adding is_deleted column to keyword table: {alter_error}")
+                # If there was an error, ensure we're in a clean state
+                try:
+                    cnx.rollback()
+                except:
+                    pass
+            # No keywords to restore if column didn't exist
+            return True
+        
+        # Start transaction - handle case where transaction is already in progress
+        try:
+            cnx.start_transaction()
+        except Exception as tx_error:
+            # If transaction already in progress, rollback and try again
+            if "already in progress" in str(tx_error).lower():
+                cnx.rollback()
+                cnx.start_transaction()
+            else:
+                raise
+        
+        # Restore all soft-deleted keywords by setting is_deleted = FALSE
+        cursor.execute("UPDATE keyword SET is_deleted = FALSE WHERE is_deleted = TRUE")
+        
+        rows_affected = cursor.rowcount
+        print(f"Restored {rows_affected} keyword(s)")
+        
+        # Commit transaction to finalize changes
+        cnx.commit()
+        return True
+        
+    except Exception as e:
+        print(f"Error restoring keywords: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Rollback transaction in case of failure
+        if cnx:
+            cnx.rollback()
+        return False
+    finally:
+        close_db_connection(cursor, cnx)
+
+
 # For 6.2 Widget Six: Neo4j Sunburst Chart - University Information
 def get_university_information(university_name: str) -> List[Tuple[str, int, str]]:
     """Fetch university information based on the university name."""
