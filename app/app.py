@@ -23,8 +23,6 @@ if __name__ == "__main__":
     app = create_app()
 
     # Start background processes
-    start_neo4j_keep_alive()
-    start_mysql_keep_alive()
     start_memory_cleanup(interval_seconds=30)
 
     app.run(
