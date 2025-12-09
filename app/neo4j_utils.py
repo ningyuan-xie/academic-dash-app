@@ -241,29 +241,34 @@ def university_collaborate_with(university_name: str) -> List[Tuple[str, int]]:
 
 
 def start_neo4j_keep_alive() -> None:
-    """Start a background thread that pings Neo4j every 1 minute to prevent Aura shutdown."""
+    """
+    Start a background thread that sends a WRITE heartbeat to Neo4j every 60 minutes to prevent Aura Free auto-pause.
+    """
     def keep_alive_loop() -> None:
-        session = None
         while True:
+            session = None
             try:
-                # Create a new session for each ping to ensure fresh connection
                 session = get_neo4j_connection()
-                result = session.run("RETURN 1 AS ping")
-                record = result.single()
+
+                # WRITE heartbeat to reset Aura inactivity timer
+                session.run("""
+                    MERGE (h:Heartbeat {name: 'keepalive'})
+                    SET h.lastSeen = datetime()
+                """)
+
+                print(f"[Neo4j KeepAlive] Heartbeat successful at {time.ctime()}")
                 
-                if record and record["ping"] == 1:
-                    print(f"Neo4j background keep-alive ping successful at {time.ctime()}")
-                else:
-                    print(f"Neo4j background keep-alive ping unexpected result at {time.ctime()}")
             except Exception as e:
-                print(f"Neo4j background keep-alive ping failed at {time.ctime()}: {e}")
+                print(f"[Neo4j KeepAlive] Heartbeat failed at {time.ctime()}: {e}")
+
             finally:
-                # Always close the session to return connection to the pool
                 if session:
                     close_neo4j_connection(session)
-                    session = None
-                # Wait 1 minute before next ping to keep connection alive
-                time.sleep(60)
-    
-    threading.Thread(target=keep_alive_loop, daemon=True).start()
-    print("Neo4j keep-alive background process started (pings immediately, then every 1 minute)")
+
+                # One heartbeat per hour
+                time.sleep(60 * 60)
+
+    thread = threading.Thread(target=keep_alive_loop, daemon=True)
+    thread.start()
+
+    print("Neo4j Aura keep-alive thread started (WRITE heartbeat every 60 minutes)")
