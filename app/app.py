@@ -3,8 +3,6 @@
 from dash import Dash
 from layout import *
 from callbacks import *
-from neo4j_utils import start_neo4j_keep_alive
-from mysql_utils import start_mysql_keep_alive
 from memory_utils import start_memory_cleanup
 
 
