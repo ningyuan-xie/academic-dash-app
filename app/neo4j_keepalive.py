@@ -2,7 +2,7 @@ from neo4j import GraphDatabase
 import os
 
 _uri = os.environ["NEO4J_URI"]
-_user = os.environ["NEO4J_USER"]
+_user = os.environ["NEO4J_USERNAME"]
 _password = os.environ["NEO4J_PASSWORD"]
 
 driver = GraphDatabase.driver(_uri, auth=(_user, _password))
