@@ -3,7 +3,6 @@
 from dash import Dash
 from layout import *
 from callbacks import *
-from memory_utils import start_memory_cleanup
 
 
 def create_app() -> Dash:
@@ -19,9 +18,6 @@ def create_app() -> Dash:
 
 if __name__ == "__main__":
     app = create_app()
-
-    # Start background processes
-    start_memory_cleanup(interval_seconds=30)
 
     app.run(
         debug=True,
