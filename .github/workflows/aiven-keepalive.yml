@@ -1,4 +1,4 @@
-name: Keep Aiven MySQL awake
+name: Aiven MySQL KeepAlive
 
 on:
   schedule:
