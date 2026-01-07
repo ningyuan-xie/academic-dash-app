@@ -54,7 +54,7 @@ def get_db_connection() -> Any:
             else:
                 print("Max retries reached. Raising exception.")
                 raise
-    
+
     # This should never be reached, but satisfies the type checker
     raise RuntimeError("Failed to establish database connection")
 
@@ -122,7 +122,7 @@ def find_universities_with_faculties_working_keywords(keyword: str) -> List[Tupl
         # Query the view to fetch top universities with faculty count
         query = "SELECT * FROM TOP_UNIVERSITIES ORDER BY faculty_count DESC LIMIT 5"
         cursor.execute(query)
-        
+
         results = cursor.fetchall()
         return [(str(row[0]), _safe_int(row[1])) for row in results]  # [(university, faculty_count), ...]
     except Exception as e:
@@ -161,7 +161,7 @@ def find_most_popular_keywords_sql(year: int) -> List[Tuple[str, int]]:
                     cursor.execute(index_sql)
                 except Exception as index_error:
                     print(f"Index creation failed for {index_name}:", index_error)
-        
+
         query = """SELECT keyword.name, COUNT(publication.id)
                    FROM keyword, publication_keyword, publication
                    WHERE keyword.id = publication_keyword.keyword_id
@@ -176,7 +176,7 @@ def find_most_popular_keywords_sql(year: int) -> List[Tuple[str, int]]:
         return []
     finally:
         close_db_connection(cursor, cnx)
-    
+
 
 # For 2. Widget Two: MySQL Controller
 def get_all_keywords() -> List[str]:
@@ -271,7 +271,7 @@ def get_faculty_count() -> int:
         return 0
     finally:
         close_db_connection(cursor, cnx)
-    
+
 
 # For 3.2 Widget Three: MySQL Table - Delete Faculty
 def delete_faculty(faculty_id: int) -> bool:
@@ -286,7 +286,7 @@ def delete_faculty(faculty_id: int) -> bool:
 
         # Mark the faculty record as deleted
         cursor.execute("UPDATE faculty SET is_deleted = TRUE WHERE id = %s", (faculty_id,))
-        
+
         # Commit transaction to finalize changes
         cnx.commit()
         return True
@@ -388,7 +388,7 @@ def faculty_interested_in_keywords_mysql(university_name: str) -> List[Tuple[str
     try:
         cnx = get_db_connection()
         cursor = cnx.cursor()
-        
+
         # Query to get top 10 keywords by faculty count for a given university
         # Join: university -> faculty -> faculty_keyword -> keyword
         query = """SELECT keyword.id, keyword.name, COUNT(DISTINCT faculty.id) AS faculty_count
@@ -421,7 +421,7 @@ def get_keyword_count_mysql() -> int:
     try:
         cnx = get_db_connection()
         cursor = cnx.cursor()
-        
+
         # Check if 'is_deleted' column exists in keyword table
         cursor.execute("""
             SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
@@ -431,7 +431,7 @@ def get_keyword_count_mysql() -> int:
         """)
         result = cursor.fetchone()
         column_exists = (_safe_int(result[0]) > 0) if result else False
-        
+
         if not column_exists:
             try:
                 cursor.execute("ALTER TABLE keyword ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE")
@@ -439,7 +439,7 @@ def get_keyword_count_mysql() -> int:
             except Exception as alter_error:
                 print(f"Error adding is_deleted column to keyword table: {alter_error}")
                 # Continue even if column creation fails
-        
+
         # Count active (non-deleted) keywords
         cursor.execute("SELECT COUNT(*) FROM keyword WHERE is_deleted IS NULL OR is_deleted = FALSE")
         result = cursor.fetchone()
@@ -458,7 +458,7 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
     try:
         cnx = get_db_connection()
         cursor = cnx.cursor()
-        
+
         # First, ensure is_deleted column exists (do this separately to avoid transaction issues)
         cursor.execute("""
             SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
@@ -468,7 +468,7 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
         """)
         result = cursor.fetchone()
         column_exists = (_safe_int(result[0]) > 0) if result else False
-        
+
         if not column_exists:
             try:
                 cursor.execute("ALTER TABLE keyword ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE")
@@ -481,12 +481,12 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
                     cnx.rollback()
                 except:
                     pass
-        
+
         # Validate keyword_id
         if not keyword_id or keyword_id.strip() == "":
             print(f"Invalid keyword_id: empty or None")
             return False
-        
+
         # Now handle the delete operation
         # Try converting to int first (most MySQL IDs are integers)
         keyword_id_int = None
@@ -494,7 +494,7 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
             keyword_id_int = int(keyword_id)
         except (ValueError, TypeError):
             pass  # Keep as string if conversion fails
-        
+
         # Ensure we're not in a transaction before starting a new one
         try:
             # Try to start transaction, but if one is already in progress, rollback first
@@ -506,7 +506,7 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
                 cnx.start_transaction()
             else:
                 raise
-        
+
         # Soft delete the keyword - try int first, then string
         rows_affected = 0
         if keyword_id_int is not None:
@@ -529,7 +529,7 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
         else:
             cursor.execute("UPDATE keyword SET is_deleted = TRUE WHERE id = %s", (keyword_id,))
             rows_affected = cursor.rowcount
-        
+
         if rows_affected > 0:
             cnx.commit()
             print(f"Successfully deleted keyword with id: {keyword_id}")
@@ -538,7 +538,7 @@ def delete_keyword_mysql(keyword_id: str) -> bool:
             cnx.rollback()
             print(f"No keyword found with id: {keyword_id} (tried as {'int and string' if keyword_id_int is not None else 'string'})")
             return False
-        
+
     except Exception as e:
         print(f"Error deleting keyword '{keyword_id}':", e)
         import traceback
@@ -557,7 +557,7 @@ def restore_keyword_mysql() -> bool:
     try:
         cnx = get_db_connection()
         cursor = cnx.cursor()
-        
+
         # Check if 'is_deleted' column exists
         cursor.execute("""
             SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
@@ -567,7 +567,7 @@ def restore_keyword_mysql() -> bool:
         """)
         result = cursor.fetchone()
         column_exists = (_safe_int(result[0]) > 0) if result else False
-        
+
         if not column_exists:
             # If column doesn't exist, ensure it exists first
             try:
@@ -583,7 +583,7 @@ def restore_keyword_mysql() -> bool:
                     pass
             # No keywords to restore if column didn't exist
             return True
-        
+
         # Start transaction - handle case where transaction is already in progress
         try:
             cnx.start_transaction()
@@ -594,22 +594,22 @@ def restore_keyword_mysql() -> bool:
                 cnx.start_transaction()
             else:
                 raise
-        
+
         # Restore all soft-deleted keywords by setting is_deleted = FALSE
         cursor.execute("UPDATE keyword SET is_deleted = FALSE WHERE is_deleted = TRUE")
-        
+
         rows_affected = cursor.rowcount
         print(f"Restored {rows_affected} keyword(s)")
-        
+
         # Commit transaction to finalize changes
         cnx.commit()
         return True
-        
+
     except Exception as e:
         print(f"Error restoring keywords: {e}")
         import traceback
         traceback.print_exc()
-        
+
         # Rollback transaction in case of failure
         if cnx:
             cnx.rollback()
@@ -625,7 +625,7 @@ def get_university_information(university_name: str) -> List[Tuple[str, int, str
     try:
         cnx = get_db_connection()
         cursor = cnx.cursor()
-        
+
         query = """SELECT university.name, COUNT(faculty.id) AS faculty_count, university.photo_url
                    FROM university, faculty
                    WHERE university.name = %s
@@ -639,3 +639,25 @@ def get_university_information(university_name: str) -> List[Tuple[str, int, str
         return []
     finally:
         close_db_connection(cursor, cnx)
+
+
+def start_mysql_keep_alive() -> None:
+    """Start a background thread that pings MySQL every 3 minutes to prevent connection timeout."""
+    def keep_alive_loop() -> None:
+        while True:
+            time.sleep(180)  # 3 minutes
+            try:
+                cnx = get_db_connection()
+                cursor = cnx.cursor()
+                cursor.execute("SELECT 1 AS ping")
+                result = cursor.fetchone()
+                ping_result = result[0] if result else None
+                if ping_result == 1:
+                    print(f"MySQL background keep-alive ping successful at {time.ctime()}")
+                close_db_connection(cursor, cnx)
+            except Exception as e:
+                print(f"MySQL background keep-alive ping failed at {time.ctime()}: {e}")
+
+    # Start the background thread
+    threading.Thread(target=keep_alive_loop, daemon=True).start()
+    print("MySQL keep-alive background process started (pings every 3 minutes)")

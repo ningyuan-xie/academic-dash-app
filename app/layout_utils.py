@@ -18,7 +18,7 @@ class GraphWidget(html.Div):
                  third_control_options: Optional[Dict[str, Any]] = None, 
                  interval_id: Optional[str] = None, details_id: Optional[str] = None, 
                  **kwargs):
-        
+
         children: List[Any] = [html.H3(title, style={'textAlign': 'center'})]
 
         # Control options: slider, slider+dropdown, radio, dropdown, double-dropdown, triple-dropdown
@@ -437,7 +437,7 @@ class DeleteWidget(html.Div):
         super().__init__(
             children=[
                 html.H4(title, style={'textAlign': 'center', 'marginBottom': '10px', 'fontSize': '20px'}),
-                
+
                 dcc.Input(
                     id=input_id, 
                     type="number" if input_type == "number" else "text",  

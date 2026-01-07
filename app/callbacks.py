@@ -166,7 +166,7 @@ def delete_faculty_callback(n_clicks: int, n_intervals: int,
     if n_intervals == 1:
         # Clear message, no update for count, disable interval (stop triggering itself again), reset n_intervals
         return "", dash.no_update, True, 0, dash.no_update
-    
+
     # Case 2: Just clicked the delete button
     # Check if faculty_id is None
     if faculty_id is None:
@@ -175,7 +175,7 @@ def delete_faculty_callback(n_clicks: int, n_intervals: int,
     # Attempt to delete faculty
     success = delete_faculty(faculty_id)
     message = f"ID {faculty_id} deleted." if success else f"Delete failed."
-    
+
     # Get updated table
     faculty_count = get_faculty_count()
     faculty_data = find_faculty_relevant_to_keyword(selected_keyword)
@@ -252,16 +252,16 @@ def widget_four(selected_db: str, selected_keyword: str, selected_affiliation: s
     # Prevent execution if either input is missing
     if not selected_keyword or not selected_affiliation or not selected_db:
         return px.bar(title="Select a Database, a Keyword, and an Affiliation to Display Data")  # Default empty figure
-    
+
     if selected_db == "MongoDB":
         faculty_data = find_top_faculties_with_highest_KRC_keyword(selected_keyword, selected_affiliation)
     elif selected_db == "MySQL":
         faculty_data = find_top_faculties_with_highest_KRC_keyword_sql(selected_keyword, selected_affiliation)
-    
+
     # Prevent execution if no data found
     if not faculty_data:
         return px.bar(title="No Data Found for Selected Keyword and Affiliation")
-    
+
     # Create Horizontal Bar Chart
     title = f"Faculty members with Highest KRC for {selected_keyword.title()} at: <br>{selected_affiliation} ({selected_db})"
     return create_bar_chart(faculty_data, title, "KRC", "Faculty", True, selected_db)
@@ -309,7 +309,7 @@ def delete_keyword_callback(n_clicks: int, n_intervals: int,
     if n_intervals == 1:
         # Clear message, no update for count, disable interval (stop triggering itself again), reset n_intervals
         return "", dash.no_update, True, 0, dash.no_update
-    
+
     # Case 2: Just clicked the delete button
     # Check if keyword_id is None
     if keyword_id is None:
@@ -318,7 +318,7 @@ def delete_keyword_callback(n_clicks: int, n_intervals: int,
     # Attempt to delete keywords
     success = delete_keyword(keyword_id)
     message = f"ID {keyword_id} deleted." if success else f"Delete failed."
-    
+
     # Get updated table
     keyword_count = get_keyword_count()
     keyword_data = faculty_interested_in_keywords(selected_university)
@@ -398,15 +398,15 @@ def show_collaboration_details(clickData: dict) -> Any:
 
     # ["points"][0]["label"] returns the university name from clicking the sunburst chart
     clicked_university = clickData["points"][0]["label"]
-    
+
     # Fetch from MySQL Database
     result = get_university_information(clicked_university)
-    
+
     if not result:
         return html.Div([
             html.H4(f"No information found for: {clicked_university}")
         ])
-    
+
     # Build HTML header and table
     return html.Div([
         create_section_header("University Details:", clicked_university),

@@ -7,7 +7,7 @@ from layout_utils import *
 
 def create_layout() -> html.Div:
     """Creates a Dash app layout in a 3-row * 2-column format with a modern bootstrap theme."""
-    
+
     # Helper function to wrap widgets in a modern card style
     def wrap_widget_card(widget_component):
         return dbc.Card(
@@ -19,7 +19,7 @@ def create_layout() -> html.Div:
     return html.Div(
         style={'backgroundColor': '#f4f6f9', 'minHeight': '100vh', 'paddingBottom': '40px'},  # Modern light grey background
         children=[
-            
+
             # Header Section
             dbc.Container(fluid=True, className="p-4", children=[
                 html.Div(
@@ -52,7 +52,7 @@ def create_layout() -> html.Div:
 
                 # Row 1
                 dbc.Row(className='g-4 mb-4', children=[
-                    
+
                     dbc.Col(width=12, lg=6, children=[
                         wrap_widget_card(
                             # 1. Widget One: MongoDB Bar Chart
@@ -94,7 +94,7 @@ def create_layout() -> html.Div:
 
                 # Row 2
                 dbc.Row(className='g-4 mb-4', children=[
-                    
+
                     dbc.Col(width=12, lg=6, children=[
                         wrap_widget_card(
                             # 3.1 Widget Three: MySQL Table
@@ -105,9 +105,9 @@ def create_layout() -> html.Div:
                                         control_options={"options": [],"placeholder": "Select a Keyword"},
                                         layout="two-col",
                                         interval_id="interval-three",
-                                         
+
                                         right_panel_widgets=[
-                                        
+
                                         # 3.2 Faculty Count Box (Top)
                                         CountDisplayWidget(title="Faculty Count",
                                                            count_id="widget-three-faculty-count-display",
@@ -122,7 +122,7 @@ def create_layout() -> html.Div:
                                                      max_value = get_faculty_count(),
                                                      input_type="number",
                                                      placeholder="Enter ID"),
-                                        
+
                                          # 3.4 Restore Button Section
                                         RestoreWidget(title="Restore Faculty",
                                                       button_id="widget-three-restore-button",
@@ -148,12 +148,12 @@ def create_layout() -> html.Div:
                                         interval_id="interval-four")
                         )
                     ]),
-                
+
                 ]),
 
                 # Row 3
                 dbc.Row(className='g-4', children=[
-                    
+
                     dbc.Col(width=12, lg=6, children=[
                         wrap_widget_card(
                             # 5. Widget Five: Neo4j Table
@@ -164,9 +164,9 @@ def create_layout() -> html.Div:
                                          control_options={"options": get_all_institutes(), "placeholder": "Select a University"},
                                          layout="two-col",
                                          interval_id="interval-five",
-                                         
+
                                          right_panel_widgets=[
-                                        
+
                                         # 5.2 Keyword Count Box (Top)
                                         CountDisplayWidget(title="Keyword Count",
                                                            count_id="widget-five-keyword-count-display",
@@ -180,7 +180,7 @@ def create_layout() -> html.Div:
                                                      interval_id="widget-five-clear-message-interval",
                                                      input_type="text",
                                                      placeholder="Enter ID"),
-                                        
+
                                          # 5.4 Restore Keyword Section
                                         RestoreWidget(title="Restore Keyword",
                                                       button_id="widget-five-restore-button",

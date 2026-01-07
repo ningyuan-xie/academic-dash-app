@@ -48,7 +48,7 @@ def get_neo4j_connection() -> Session:
             else:
                 print("Max retries reached. Raising exception.")
                 raise
-    
+
     # This should never be reached, but satisfies the type checker
     raise RuntimeError("Failed to establish Neo4j connection")
 
@@ -133,7 +133,7 @@ def get_keyword_count() -> int:
     session = None
     try:
         session = get_neo4j_connection()
-        
+
         # Ensure all Keyword nodes have the is_deleted property
         session.run("""
             MATCH (k:KEYWORD)
