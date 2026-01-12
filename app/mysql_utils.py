@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import time
 import threading
+import requests
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -641,30 +642,64 @@ def get_university_information(university_name: str) -> List[Tuple[str, int, str
         close_db_connection(cursor, cnx)
 
 
+def ping_aiven_service() -> None:
+    """Ping Aiven control-plane API to keep the service active."""
+    token = os.getenv("AIVEN_API_TOKEN")
+    project = os.getenv("AIVEN_PROJECT")
+    service = os.getenv("AIVEN_MYSQL_SERVICE")
+
+    if not all([token, project, service]):
+        print("Aiven API ping skipped: missing env vars")
+        return
+
+    url = f"https://api.aiven.io/v1/project/{project}/service/{service}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            print(f"Aiven API keep-alive ping successful at {time.ctime()}")
+        else:
+            print(
+                f"Aiven API ping returned {resp.status_code} at {time.ctime()}"
+            )
+    except Exception as e:
+        print(f"Aiven API keep-alive ping failed at {time.ctime()}: {e}")
+
+
 def start_mysql_keep_alive() -> None:
-    """Start a background thread that pings MySQL every 1 minute to prevent connection timeout."""
+    """Start background thread that pings MySQL and Aiven every 1 minute."""
+
     def keep_alive_loop() -> None:
-        cnx, cursor = None, None
         while True:
+            cnx, cursor = None, None
             try:
-                # Create a new connection for each ping to ensure fresh connection
+                # ---- MySQL ping ----
                 cnx = get_db_connection()
                 cursor = cnx.cursor()
                 cursor.execute("SELECT 1 AS ping")
                 result = cursor.fetchone()
 
                 if result and result[0] == 1:
-                    print(f"MySQL background keep-alive ping successful at {time.ctime()}")
+                    print(f"MySQL keep-alive ping successful at {time.ctime()}")
                 else:
-                    print(f"MySQL background keep-alive ping unexpected result at {time.ctime()}")
+                    print(f"MySQL keep-alive ping unexpected result at {time.ctime()}")
+
             except Exception as e:
-                print(f"MySQL background keep-alive ping failed at {time.ctime()}: {e}")
+                print(f"MySQL keep-alive ping failed at {time.ctime()}: {e}")
+
             finally:
-                # Always close the connection and cursor to free resources
                 close_db_connection(cursor, cnx)
-                cursor, cnx = None, None
-                # Wait 1 minute before next ping to keep connection alive
-                time.sleep(60)
+
+            # ---- Aiven API ping ----
+            ping_aiven_service()
+
+            # ---- Sleep ----
+            time.sleep(60)
 
     threading.Thread(target=keep_alive_loop, daemon=True).start()
-    print("MySQL keep-alive background process started (pings immediately, then every 1 minute)")
+    print("MySQL + Aiven keep-alive background process started")
+
