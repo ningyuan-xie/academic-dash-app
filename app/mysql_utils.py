@@ -702,4 +702,3 @@ def start_mysql_keep_alive() -> None:
 
     threading.Thread(target=keep_alive_loop, daemon=True).start()
     print("MySQL + Aiven keep-alive background process started")
-
