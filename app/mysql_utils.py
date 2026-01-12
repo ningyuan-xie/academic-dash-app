@@ -30,7 +30,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return default
 
 def get_db_connection() -> Any:
-    """Create and return a new connection to AWS RDS MySQL."""
+    """Create and return a new connection to MySQL."""
     max_retries = 3
     retry_delay_seconds = 2
 
