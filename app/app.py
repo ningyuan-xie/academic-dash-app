@@ -19,9 +19,6 @@ def create_app() -> Dash:
 if __name__ == "__main__":
     app = create_app()
 
-    # Start MySQL keep-alive background process
-    start_mysql_keep_alive()
-
     app.run(
         debug=True,
         use_reloader=True,
