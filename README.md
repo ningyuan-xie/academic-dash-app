@@ -28,16 +28,16 @@
   - [4.2 Option 2: Use Conda Environment from environment.yml](#42-option-2-use-conda-environment-from-environmentyml)
   - [4.3 Run the Application](#43-run-the-application)
 - [5. Usage](#5-usage)
-  - [5.1 Top 10 Trending Keywords in Publications](#51-top-10-trending-keywords-in-publications)
-  - [5.2 User-selected Favorite Keywords](#52-user-selected-favorite-keywords)
-  - [5.3 Faculty Members Relevant to Selected Keywords](#53-faculty-members-relevant-to-selected-keywords)
-  - [5.4 Faculty Members with Highest KRC](#54-faculty-members-with-highest-krc)
-  - [5.5 Top Keywords in Faculty Interests](#55-top-keywords-in-faculty-interests)
-  - [5.6 Top Universities Collaborated With](#56-top-universities-collaborated-with)
+  - [5.1 Top 10 Trending Keywords in Publications](#51-widget-1-top-10-trending-keywords-in-publications)
+  - [5.2 User-selected Favorite Keywords](#52-widget-2-user-selected-favorite-keywords)
+  - [5.3 Faculty Members Relevant to Selected Keywords](#53-widget-3-faculty-members-relevant-to-selected-keywords)
+  - [5.4 Faculty Members with the Highest KRC for Selected Keywords](#54-widget-4-faculty-members-with-the-highest-krc-for-selected-keywords)
+  - [5.5 Top Keywords in Faculty Interests from Selected Universities](#55-widget-5-top-10-keywords-in-faculty-interests-from-selected-universities)
+  - [5.6 Top Universities Collaborated with Selected Universities](#56-widget-6-top-10-universities-collaborated-with-selected-universities)
 - [6. Design](#6-design)
-  - [6.1 Frontend](#61-frontend)
-  - [6.2 Middle Layer](#62-middle-layer)
-  - [6.3 Database Layer](#63-database-layer)
+  - [6.1 Frontend](#61-frontend-dash-plotly)
+  - [6.2 Backend](#62-backend-flask--python)
+  - [6.3 Database Layer](#63-database-layer-mysql-mongodb-neo4j)
 - [7. Implementation](#7-implementation)
   - [7.1 Detailed Implementation](#71-detailed-implementation)
   - [7.2 Frameworks & Libraries](#72-frameworks--libraries)
@@ -167,8 +167,8 @@ Database **Neo4j** and **MySQL** are used to store and retrieve this data.
 ### 6.1 Frontend (Dash Plotly)
 Provides an interactive user interface with data filtering and visualization features. This is achieved through a combination of **six** Dash widgets, including bar charts, pie charts, data tables, and sunburst charts. They are arranged in a rectangular layout that is aesthetically pleasing and easy to navigate.
 
-### 6.2 Middle Layer (Flask & Python)
-Handles business logic, processes user requests, and acts as an intermediary between the frontend and the database. More details on the middle layer can be found in the **Implementation** section.
+### 6.2 Backend (Flask & Python)
+Handles business logic, processes user requests, and acts as an intermediary between the frontend and the database. This includes database connection management, query execution, data transformation, and callback functions that respond to user interactions.
 
 ### 6.3 Database Layer (MySQL, MongoDB, Neo4j)
 Stores relational, document, and graph Academic World data for efficient retrieval. Specifically: widget 1 and 4 use **MongoDB**; widget 1, 2, 3, 4, and 6 use **MySQL**; widget 5 and 6 use **Neo4j**.
