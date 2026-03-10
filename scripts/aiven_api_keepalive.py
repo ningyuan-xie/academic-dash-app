@@ -20,7 +20,7 @@ def ping_aiven_service() -> None:
     }
 
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(url, headers=headers, timeout=30)
         if resp.status_code == 200:
             print(f"Aiven API keep-alive ping successful at {time.ctime()}")
         else:
