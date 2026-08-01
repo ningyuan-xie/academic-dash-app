@@ -8,7 +8,6 @@ $RECYCLE.BIN/
 .idea/
 .ipynb_checkpoints/
 .metadata/
-.vscode/
 
 # Virtual Environment
 venv/
@@ -25,3 +24,4 @@ ENV/
 *.csv
 *.dump
 *.sql
+!settings.json
